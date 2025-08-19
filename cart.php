@@ -1,5 +1,24 @@
 <?php
 session_start();
+// เพิ่ม/ลด/ลบจำนวนสินค้าตะกร้า
+if (isset($_POST['action']) && isset($_POST['productId'])) {
+    $productId = $_POST['productId'];
+    if (isset($_SESSION['cart'])) {
+        foreach ($_SESSION['cart'] as $key => $item) {
+            if ($item['productId'] === $productId) {
+                if ($_POST['action'] === 'increase') {
+                    $_SESSION['cart'][$key]['quantity'] += 1;
+                } elseif ($_POST['action'] === 'decrease' && $item['quantity'] > 1) {
+                    $_SESSION['cart'][$key]['quantity'] -= 1;
+                } elseif ($_POST['action'] === 'remove') {
+                    unset($_SESSION['cart'][$key]);
+                }
+                break;
+            }
+        }
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,34 +43,49 @@ session_start();
             <div class="container mt-5">
                 <div class="row">
                     <?php if (isset($_SESSION['cart']) && count($_SESSION['cart']) > 0): ?>
-                        <ul class="list-group">
-                            <?php foreach ($_SESSION['cart'] as $item): ?>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div class="d-flex w-100">
-                                        <img src="./assets/imgs/<?= htmlspecialchars($item['productImage']); ?>" alt="Product Image" class="img-thumbnail" style="height: 80px; width: 80px; object-fit: cover;">
-                                        <div class="ms-3 w-100">
-                                            <h5 class="mb-1"><?= htmlspecialchars($item['productName']); ?></h5>
-                                            <p class="mb-1"><strong>Price:</strong> <?= htmlspecialchars($item['productPrice']); ?> บาท</p>
-                                            <p class="mb-0"><strong>Quantity:</strong> <?= htmlspecialchars($item['quantity']); ?></p>
-                                        </div>
-                                    </div>
-                                    <div class="btn-group" role="group" aria-label="Basic example">
-                                        <button class="btn btn-success btn-sm">
-                                            <i class="bi bi-plus-circle-fill"></i> เพิ่ม
-                                        </button>
-                                        <button class="btn btn-warning btn-sm">
-                                            <i class="bi bi-dash-circle-fill"></i> ลด
-                                        </button>
-                                        <button class="btn btn-danger btn-sm">
-                                            <i class="bi bi-trash-fill"></i> ลบ
-                                        </button>
-                                            
-                                    </div>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
+                    <ul class="list-group">
+                        <?php foreach ($_SESSION['cart'] as $item): ?>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex w-100">
+                                <img src="./assets/imgs/<?= htmlspecialchars($item['productImage']); ?>"
+                                    alt="Product Image" class="img-thumbnail"
+                                    style="height: 80px; width: 80px; object-fit: cover;">
+                                <div class="ms-3 w-100">
+                                    <h5 class="mb-1"><?= htmlspecialchars($item['productName']); ?></h5>
+                                    <p class="mb-1"><strong>Price:</strong>
+                                        <?= htmlspecialchars($item['productPrice']); ?> บาท</p>
+                                    <p class="mb-0"><strong>Quantity:</strong>
+                                        <?= htmlspecialchars($item['quantity']); ?></p>
+                                </div>
+                            </div>
+                            <div class="btn-group" role="group" aria-label="Basic example">
+                                <form method="post" class="d-inline">
+                                    <input type="hidden" name="productId" value="<?= htmlspecialchars($item['productId']); ?>">
+                                    <input type="hidden" name="action" value="increase">
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="bi bi-plus-circle-fill"></i> เพิ่ม
+                                    </button>
+                                </form>
+                                <form method="post" class="d-inline">
+                                    <input type="hidden" name="productId" value="<?= htmlspecialchars($item['productId']); ?>">
+                                    <input type="hidden" name="action" value="decrease">
+                                    <button type="submit" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-dash-circle-fill"></i> ลด
+                                    </button>
+                                </form>
+                                <form method="post" class="d-inline" onsubmit="return confirmDelete(event);">
+                                    <input type="hidden" name="productId" value="<?= htmlspecialchars($item['productId']); ?>">
+                                    <input type="hidden" name="action" value="remove">
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="bi bi-trash-fill"></i> ลบ
+                                    </button>
+                                </form>
+                            </div>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
                     <?php else: ?>
-                        <p class="text-center col-12">ไม่มีสินค้าในตระกล้า</p>
+                    <p class="text-center col-12">ไม่มีสินค้าในตระกล้า</p>
                     <?php endif; ?>
                 </div>
             </div>
@@ -61,4 +95,25 @@ session_start();
     <?php include './components/footer.php'; ?>
 </body>
 
+<script>
+    function confirmDelete(event) {
+        event.preventDefault(); // Prevent the form from submitting immediately
+        const form = event.target;
+        Swal.fire({
+            title: 'ยืนยันการลบสินค้า',
+            text: "คุณแน่ใจหรือว่าต้องการลบสินค้านี้?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'ใช่, ลบเลย!',
+            cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit(); // Submit the form if confirmed
+            }
+        });
+        return false; // Prevent the default form submission
+    }
+</script>
+
+</html>
 </html>
